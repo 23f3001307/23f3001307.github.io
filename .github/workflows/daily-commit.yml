@@ -1,0 +1,63 @@
+name: Daily Automated Commit
+
+# This workflow is scheduled to run once per day.
+# The cron syntax '30 08 * * *' means "at 08:30 UTC every day".
+# This uses specific minutes (30) and hour (08), not wildcards for them,
+# fulfilling the 'specific hours/minutes' requirement.
+on:
+  schedule:
+    - cron: '30 08 * * *'
+
+# This allows you to manually trigger the workflow from the GitHub Actions tab.
+# Handy for immediate testing without waiting for the scheduled time.
+  workflow_dispatch:
+
+jobs:
+  daily_update:
+    runs-on: ubuntu-latest # Specifies the operating system to run the job on
+
+    steps:
+      # Step 1: Checkout the repository code
+      # This action checks out your repository under $GITHUB_WORKSPACE,
+      # so your workflow can access its content.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # The GITHUB_TOKEN is a temporary GitHub token available to each workflow run.
+          # It has permissions to push code back to the repository, which is needed here.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Set persist-credentials to false to avoid issues with older git versions
+          persist-credentials: false
+
+      # Step 2: Configure Git user details for the commit
+      # GitHub Actions uses these details when making a commit.
+      - name: Configure Git user
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      # Step 3: Add daily commit - 23f3001307@ds.study.iitm.ac.in
+      # This step includes your assignment email in its name, as required.
+      # It creates/updates a file, stages it, commits it, and pushes it.
+      - name: Add daily commit - 23f3001307@ds.study.iitm.ac.in
+        run: |
+          # Create or update a file (e.g., LAST_UPDATE.txt) with the current UTC timestamp
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "Last automated update: $TIMESTAMP" > LAST_UPDATE.txt
+
+          # Add the changed file to the staging area
+          git add LAST_UPDATE.txt
+
+          # Check if there are any actual changes before committing
+          # This prevents the workflow from failing if there's nothing new to commit
+          # (e.g., if you run it twice manually in quick succession).
+          if git diff --cached --exit-code; then
+            echo "No changes detected, skipping commit."
+          else
+            # Commit the changes with a meaningful message
+            git commit -m "Automated daily update: $TIMESTAMP"
+            echo "Committing changes."
+            # Push the commit to the 'main' branch (or your default branch)
+            git push origin HEAD:${GITHUB_REF##*/} # This pushes to the current branch
+            echo "Changes pushed."
+          fi
