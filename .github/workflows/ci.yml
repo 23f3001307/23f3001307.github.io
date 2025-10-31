@@ -1,4 +1,4 @@
-name: Daily Automated Commit
+name: CI
 
 # This workflow is scheduled to run once per day.
 # The cron syntax '30 08 * * *' means "at 08:30 UTC every day".
